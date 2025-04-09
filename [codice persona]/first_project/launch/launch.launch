@@ -1,0 +1,7 @@
+<launch>
+
+<node pkg="first_project" name="odometer" type="odometer" output="screen"/>
+<node pkg="first_project" name="gps_odometer" type="gps_odometer" output="screen"/>
+<node pkg="first_project" name="sector_times" type="sector_times" output="screen"/>
+
+</launch>

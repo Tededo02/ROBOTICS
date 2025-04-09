@@ -1,0 +1,3 @@
+int: current_sector
+float: current_sector_time
+float: current_sector_mean_speed
