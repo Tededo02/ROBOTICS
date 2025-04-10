@@ -1,0 +1,17 @@
+Visualization Manager:
+  Displays:
+    - Name: Grid
+      Type: rviz/Grid
+    - Name: TF
+      Type: rviz/TF
+      Show Names: True
+    - Name: Odometry
+      Type: rviz/Odometry
+      Topic: /odom
+      Color: Blue
+    - Name: GPS_Odometry
+      Type: rviz/Odometry
+      Topic: /gps_odom
+      Color: Red
+  Global Options:
+    Fixed Frame: odom
