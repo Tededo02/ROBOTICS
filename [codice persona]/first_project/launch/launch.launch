@@ -1,5 +1,8 @@
 <launch>
 
+
+<env name="XDG_RUNTIME_DIR" value="/tmp/runtime"/>
+
 <node pkg="first_project" type="odometer" name="odometer" output="screen">
     <param name="odom_frame" value="odom"/>
     <param name="child_frame" value="vehicle"/>
@@ -21,10 +24,6 @@
     <param name="gps_odometer/lat_r" value="45.000000" />
     <param name="gps_odometer/lon_r" value="9.000000" />
     <param name="gps_odometer/alt_r" value="1.0" />
-
-    <!-- Avvio del nodo gps_odometer -->
-    <node pkg="src" type="gps_odometer" name="gps_odometer" output="screen"/>
-
 
 
 </launch>
