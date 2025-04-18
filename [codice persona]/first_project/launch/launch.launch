@@ -23,6 +23,6 @@
     </node>
 
     <!-- Avvia RViz con una configurazione predefinita -->
-    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find first_project)/rviz/odom_gps_view.rviz" />
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find first_project)/cfg/odom_gps_view.rviz" />
 
 </launch>

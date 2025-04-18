@@ -89,7 +89,7 @@ private:
         nav_msgs::Odometry odom;
         odom.header.stamp = ros::Time::now();
         odom.header.frame_id = "odom"; // Questo è il frame di riferimento del GPS
-        odom.child_frame_id = "base_link"; // Questo è il frame di riferimento dell'auto, sto pubblicando la posizione dell'auto rispetto al GPS
+        odom.child_frame_id = "gps"; // Questo è il frame di riferimento dell'auto, sto pubblicando la posizione dell'auto rispetto al GPS
         // Posizione dell'auto rispetto al GPS sistema ENU
         odom.pose.pose.position.x = enuX;
         odom.pose.pose.position.y = enuY;
@@ -108,7 +108,7 @@ private:
         geometry_msgs::TransformStamped transform;
         transform.header.stamp = odom.header.stamp;
         transform.header.frame_id = "odom";
-        transform.child_frame_id = "base_link";
+        transform.child_frame_id = "gps";
         transform.transform.translation.x = enuX;
         transform.transform.translation.y = enuY;
         transform.transform.translation.z = enuZ;
