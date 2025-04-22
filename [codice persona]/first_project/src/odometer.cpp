@@ -16,7 +16,7 @@ public:
     void callback(const geometry_msgs::PointStamped::ConstPtr& msg) {
         // Extract speed (km/h) and steering angle (degrees)
         double speed_mps = msg->point.x / 3.6; // Convert speed to m/s
-        double steering_angle_rad = msg->point.y * M_PI / 180.0; // Convert steering angle to radians
+        double steering_angle_rad = (msg->point.y/32)* M_PI / 180.0; // Convert steering angle to radians
 
         // Compute time delta
         ros::Time current_time = ros::Time::now();
