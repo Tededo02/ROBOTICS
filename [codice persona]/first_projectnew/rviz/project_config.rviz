@@ -1,0 +1,53 @@
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Name: TF
+      Class: rviz/TF
+      Enabled: true
+    - Name: Odometry - Odom
+      Class: rviz/Odometry
+      Topic: /odom
+      Enabled: true
+      Color: 0.0; 0.0; 1.0  # Blu
+      Keep: 100
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Covariance: false
+    - Name: Odometry - GPS
+      Class: rviz/Odometry
+      Topic: /gps_odom
+      Enabled: true
+      Color: 1.0; 0.0; 0.0  # Rosso
+      Keep: 100
+      Position Tolerance: 0.1
+      Angle Tolerance: 0.1
+      Covariance: false
+    - Name: Path - Odom
+      Class: rviz/Path
+      Topic: /odom_path
+      Enabled: true
+      Color: 0.0; 0.5; 1.0  # Azzurro
+      Line Style: Lines
+      Line Width: 0.03
+    - Name: Path - GPS
+      Class: rviz/Path
+      Topic: /gps_path
+      Enabled: true
+      Color: 1.0; 0.3; 0.3  # Rosa
+      Line Style: Lines
+      Line Width: 0.03
+  Enabled: true
+  Global Options:
+    Fixed Frame: odom
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+    - Class: rviz/FocusCamera
+    - Class: rviz/Measure
+    - Class: rviz/SetInitialPose
+    - Class: rviz/SetGoal
+  Value: true

@@ -1,0 +1,31 @@
+<launch>
+
+    <env name="XDG_RUNTIME_DIR" value="/tmp/runtime"/>
+
+    <!-- Nodo odometria classica -->
+    <node pkg="first_project" type="odometer" name="odometer" output="screen">
+        <param name="odom_frame" value="odom"/>
+        <param name="child_frame" value="vehicle"/>
+    </node>
+
+    <!-- Nodo odometria GPS -->
+    <node pkg="first_project" type="gps_odometer" name="gps_odometer" output="screen">
+        <param name="odom_frame" value="odom_gps"/>
+        <param name="child_frame" value="gps"/>
+        <param name="lat_r" value="45.618932386592405" />
+        <param name="lon_r" value="9.281178887031235" />
+        <param name="alt_r" value="229.04906147731415" />
+    </node>
+
+    <node name="odom_to_path" pkg="first_project" type="testpath" output="screen"/>
+
+
+    <!-- Nodo per il calcolo dei tempi di settore -->
+    <node pkg="first_project" type="sector_times" name="sector_times" output="screen">
+        <param name="sector_topic" value="/sector_times"/>
+    </node>
+
+    <!-- Avvia RViz con una configurazione predefinita -->
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find first_project)/rviz/odom_gps_view.rviz" />
+
+</launch>
