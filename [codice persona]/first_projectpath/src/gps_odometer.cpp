@@ -85,7 +85,9 @@ private:
 
         ros::Time now = ros::Time::now();
         ros::Duration dt = now - lastTime;
-
+        if(lat==0 && lon==0){
+            return;
+        }
         if (gotPrev) {
             double dX   = enuX - prevX;
             double dY   = enuY - prevY;

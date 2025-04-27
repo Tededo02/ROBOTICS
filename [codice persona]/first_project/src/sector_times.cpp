@@ -4,95 +4,98 @@
 #include "first_project/sector_times.h" // Messaggio custom
 #include <cmath>
 #include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
+#include <message_filters/synchronizer.h>
 
 class SectorTimes {
 public:
     SectorTimes()
-        : current_sector(1), current_sector_time(0.0),
-          current_sector_speed_sum(0.0), speed_count(0),
-          last_latitude(0.0), last_longitude(0.0)
-          {
-            // Subscribe to /speedsteer (vehicle data)
-            speedsteer_sub.subscribe(nh, "/speedsteer", 1000);
-            gps_sub.subscribe(nh, "/swiftnav/front/gps_pose", 1000);
-    
-            sync.reset(new message_filters::TimeSynchronizer<geometry_msgs::PointStamped, sensor_msgs::NavSatFix>(
-                speedsteer_sub, gps_sub, 10));
-            sync->registerCallback(boost::bind(&SectorTimes::callback, this, _1, _2));
-    
-            sector_pub = nh.advertise<first_project::sector_times>("/sector_times", 10);
-        }
-    
+        : current_sector(1), current_sector_time(0.0), current_sector_mean_speed(0.0)
+    {
+        speedsteer_sub.subscribe(nh, "/speedsteer", 10);
+        gps_sub.subscribe(nh, "/swiftnav/front/gps_pose", 10);
+
+        sync.reset(new Sync(MySyncPolicy(10), speedsteer_sub, gps_sub));
+        sync->registerCallback(boost::bind(&SectorTimes::callback, this, _1, _2));
+
+        sector_pub = nh.advertise<first_project::sector_times>("/sector_times", 10);
+        last_time = ros::Time::now();
+    }
 
     void callback(const geometry_msgs::PointStamped::ConstPtr& speed_msg,
-        const sensor_msgs::NavSatFix::ConstPtr& gps_msg) {
-double speed = speed_msg->point.x / 3.6; // Convert speed from km/h to m/s
-double lat = gps_msg->latitude;
-double lon = gps_msg->longitude;
-//aggiorno la velocità media del settore corrente
-ros::Time now = ros::Time::now();
-mean_speed = (mean_speed*current_sector_time + speed*(now - current_sector_start_time).toSec()) / (current_sector_time + (now - current_sector_start_time).toSec());
+                  const sensor_msgs::NavSatFix::ConstPtr& gps_msg)
+    {
+        double speed = speed_msg->point.y / 3.6; // km/h -> m/s
+        double lat = gps_msg->latitude;
+        double lon = gps_msg->longitude;
 
-// Calcola distanza e tempo
-double distance = haversineDistance(lat, lon, last_latitude, last_longitude);
-current_sector_time = (now - current_sector_start_time).toSec();
-//calcola il settore corrente
+        ros::Time now = ros::Time::now();
+        double dt = (now - last_time).toSec();
+        last_time = now;
 
-  // Crea e pubblica il messaggio custom
-  first_project::sector_times sector_msg;
-  sector_msg.current_sector = current_sector;
-  sector_msg.current_sector_time = current_sector_time;
-  sector_msg.current_sector_mean_speed = speed; // Usa la velocità corrente
-  sector_pub.publish(sector_msg);
+        if (dt <= 0.0) return; // Protezione contro deltaTime negativi o nulli
 
-            // Reset per il prossimo settore
-            last_latitude = lat;
-            last_longitude = lon;
-            current_sector_start_time = now;
-}
-    private:
+        ROS_INFO("Callback attivata! Settore attuale: %d", current_sector);
+
+        // Gestione transizioni tra settori (con tolleranza sulla latitudine)
+        if (std::abs(lat - latSet2) < 0.0001 && lon >= lonSet2 && current_sector == 1) {
+            current_sector = 2;
+            current_sector_time = 0.0;
+            current_sector_mean_speed = speed; // km/h -> m/s
+        }
+        else if (std::abs(lat - latSet3) < 0.0001 && lon <= lonSet3 && current_sector == 2) {
+            current_sector = 3;
+            current_sector_time = 0.0;
+            current_sector_mean_speed =speed; // km/h -> m/s
+
+        }
+        else if (std::abs(lat - latSet1) < 0.0001 && std::abs(lon - lonSet1)<0.0001 && current_sector == 3) {
+            current_sector = 1;
+            current_sector_time = 0.0;
+            current_sector_mean_speed = speed; // km/h -> m/s
+        }
+
+        // Aggiorna media e tempo
+        current_sector_mean_speed = (current_sector_mean_speed * current_sector_time + speed * dt) / (current_sector_time + dt);
+        current_sector_time += dt;
+
+        // Crea e pubblica il messaggio
+        first_project::sector_times msg;
+        msg.current_sector = current_sector;
+        msg.current_sector_time = current_sector_time;
+        msg.current_sector_mean_speed = current_sector_mean_speed*3.6;//riconverto in km/h
+        sector_pub.publish(msg);
+    }
+
+private:
     ros::NodeHandle nh;
     message_filters::Subscriber<geometry_msgs::PointStamped> speedsteer_sub;
     message_filters::Subscriber<sensor_msgs::NavSatFix> gps_sub;
-    boost::shared_ptr<message_filters::TimeSynchronizer<geometry_msgs::PointStamped, sensor_msgs::NavSatFix>> sync;
+
+    typedef message_filters::sync_policies::ApproximateTime<geometry_msgs::PointStamped, sensor_msgs::NavSatFix> MySyncPolicy;
+    typedef message_filters::Synchronizer<MySyncPolicy> Sync;
+    boost::shared_ptr<Sync> sync;
+
     ros::Publisher sector_pub;
 
-    // Sector info
+    // Coordinate settori
+    double latSet1 = 45.61893238659;
+    double lonSet1 = 9.28117888703;
+    double latSet2 = 45.630087;
+    double lonSet2 = 9.289486;
+    double latSet3 = 45.623125;
+    double lonSet3 = 9.286558;
+
+    // Stato attuale
     int current_sector;
     double current_sector_time;
-    double current_sector_speed_sum;
-    int speed_count;
-
-    ros::Time current_sector_start_time;
-    double last_latitude= 45.618932386592405;
-    double last_longitude= 9.281178887031235;
-    double last_sector=1;
-    double mean_speed=0.0;
-
-    const double sector_length = 100.0; // meters
-
-    // Haversine distance in meters
-    double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
-        const double R = 6371000; // Earth radius in meters
-        double dLat = (lat2 - lat1) * M_PI / 180.0;
-        double dLon = (lon2 - lon1) * M_PI / 180.0;
-
-        lat1 = lat1 * M_PI / 180.0;
-        lat2 = lat2 * M_PI / 180.0;
-
-        double a = sin(dLat / 2) * sin(dLat / 2) +
-                   sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
-        double c = 2 * atan2(sqrt(a), sqrt(1 - a));
-        return R * c;
-    }
+    double current_sector_mean_speed;
+    ros::Time last_time;
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     ros::init(argc, argv, "sector_times");
-
-    SectorTimes sectorTimes;
+    SectorTimes node;
     ros::spin();
-
     return 0;
 }

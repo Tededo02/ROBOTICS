@@ -7,31 +7,41 @@
 #include <angles/angles.h>
 
 class Odometer {
-public:
-    Odometer() : x(0.0), y(0.0), theta(0.0), got_first_time(false) {
-        wheelbase     = 176.5 / 100.0;     // → metri
-        rear_baseline = 130.0 / 100.0;     // → metri (non usato per ora)
+    public:
+    // Costruttore della classe
+    Odometer()
+        : nh("~"), x(0.0), y(0.0), theta(85 * M_PI / 180.0), got_first_time(false)
+    {
+        // Inizializzazione dei parametri del veicolo
+        wheelbase     = 176.5 / 100.0;     // metri
+        rear_baseline = 130.0 / 100.0;     // metri
 
-        sub = nSub.subscribe("/speedsteer", 1000, &Odometer::callback, this);
-        pub = nPub.advertise<nav_msgs::Odometry>("/odom", 1000);
-        ros::Time init_time = ros::Time::now();
-        publishOdomTF(init_time, 0.0, 0.0);
+        // Sottoscrizione al topic dei comandi di velocità e sterzo
+        sub = nh.subscribe("/speedsteer", 1000, &Odometer::callback, this);
+        
+        // Publisher per il topic dell’odometria
+        pub = nh.advertise<nav_msgs::Odometry>("/odom", 1000);
     }
 
     void callback(const geometry_msgs::PointStamped::ConstPtr& msg) {
-        double speed_mps = msg->point.x / 3.6;               // km/h → m/s
-        double raw_sf    = msg->point.y;                     // steering angle of the steering wheel [grad]
+        double speed_mps = msg->point.y / 3.6;               // km/h → m/s
+        double raw_sf    = msg->point.x;                     // steering angle of the steering wheel [grad]
         double omega;        // massimo angolo sterzo [rad]
+        double steering_angle;
         // Normalizzo steering factor e ricavo steering angle
-        double steering_angle =raw_sf / steering_factor; // steering angle [grad]
+        if (raw_sf > 0){
+             steering_angle =(raw_sf) / steering_factor;
+        }else{ // normalizzo [grad]
+        steering_angle =(raw_sf+5.5) / steering_factor; // steering angle [grad] era 5.5
+        }
         steering_angle = steering_angle*M_PI / 180.0; // [rad]
 
         ros::Time current_time = msg->header.stamp;
         // primo messaggio: inoltro posizione iniziale e TF
         if (!got_first_time) {
             last_time      = current_time;
-            x = 0.0; y = 0.0; theta = 0.0;
-            publishOdomTF(current_time, 0.0, 0.0);
+            x = 0.0; y = 0.0; theta = 85*M_PI/180.0;
+            publishOdomTF(current_time, 0.0, theta);
             got_first_time = true;
             return;
         }
@@ -40,19 +50,27 @@ public:
 
         // Cinematica bicycle model
         double dx=0.0, dy=0.0, dtheta=0.0;
-        const double EPS_ANG = 1e-3;
-        if (fabs(steering_angle) < EPS_ANG) {
+        const double EPS_ANG = 0.00260; //era 0.00265
+        if (fabs(steering_angle) < EPS_ANG) { //fabs(steering_angle) < EPS_ANG) {
             // moto rettilineo
-            dx = speed_mps * cos(theta) * dt;
-            dy = speed_mps * sin(theta) * dt;
+            dtheta =   0.0;
             omega = 0.0;
+            dx =  speed_mps*dt * cos(theta+(omega*dt)/2.0);
+            dy = speed_mps*dt * sin(theta+(omega*dt)/2.0);
+
         } else {
-            double R = wheelbase / tan(steering_angle)+rear_baseline/2.0;
+            if(steering_angle > 0.01){
+                steering_angle +=0.008;
+                }else{
+                    steering_angle-(0.00273);//era 0.00273
+                } //correzione angolo sterzo [grad]
+            double R = wheelbase / tan(steering_angle)+rear_baseline/2; // raggio di curvatura [m]
             dtheta = (speed_mps / R) * dt;
+            omega = dtheta / dt;
             dx = R * (sin(theta + dtheta) - sin(theta));
             dy = -R * (cos(theta + dtheta) - cos(theta));
             theta += dtheta;
-             omega = dtheta / dt;
+             
         }
         x += dx;
         y += dy;
@@ -76,7 +94,7 @@ private:
         odom.pose.pose.position.z  = 0;
         odom.pose.pose.orientation = tf::createQuaternionMsgFromYaw(theta);
         odom.twist.twist.linear.x  = speed_mps;
-        odom.twist.twist.linear.y  = 0;
+        odom.twist.twist.linear.y  = 0;//il veicolo non può muoversi lateralmente nel suo frame
         odom.twist.twist.angular.z = omega;
         pub.publish(odom);
 
@@ -85,8 +103,8 @@ private:
         t.setRotation(tf::createQuaternionFromYaw(theta));
         brPub.sendTransform(tf::StampedTransform(t, time, "odom", "vehicle"));
     }
-    double steering_factor=32.0; // steering factor [grad]
-    ros::NodeHandle nSub, nPub;
+    double steering_factor=30.0; // steering factor [grad]
+    ros::NodeHandle nh;
     ros::Subscriber sub;
     ros::Publisher pub;
     tf::TransformBroadcaster brPub;
