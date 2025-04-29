@@ -50,8 +50,8 @@ class Odometer {
 
         // Cinematica bicycle model
         double dx=0.0, dy=0.0, dtheta=0.0;
-        const double EPS_ANG = 0.00260; //era 0.00265
-        if (fabs(steering_angle) < EPS_ANG) { //fabs(steering_angle) < EPS_ANG) {
+        const double EPS_ANG = 0.00265;
+        if (fabs(steering_angle) < EPS_ANG) {
             // moto rettilineo
             dtheta =   0.0;
             omega = 0.0;
@@ -59,10 +59,10 @@ class Odometer {
             dy = speed_mps*dt * sin(theta+(omega*dt)/2.0);
 
         } else {
-            if(steering_angle > 0.01){
-                steering_angle +=0.008;
+            if(steering_angle > 0.03){
+                steering_angle +=0.015;
                 }else{
-                    steering_angle-(0.00273);//era 0.00273
+                    steering_angle-(0.00283);
                 } //correzione angolo sterzo [grad]
             double R = wheelbase / tan(steering_angle)+rear_baseline/2; // raggio di curvatura [m]
             dtheta = (speed_mps / R) * dt;
