@@ -43,6 +43,8 @@ target_link_libraries(gps_odometer ${catkin_LIBRARIES})
 add_executable(sector_times src/sector_times.cpp)
 target_link_libraries(sector_times ${catkin_LIBRARIES})
 
+
+
 ## Installazione degli eseguibili
 install(TARGETS odometer gps_odometer sector_times
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

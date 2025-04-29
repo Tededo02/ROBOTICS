@@ -12,9 +12,9 @@
     <node pkg="first_project" type="gps_odometer" name="gps_odometer" output="screen">
         <param name="odom_frame" value="odom_gps"/>
         <param name="child_frame" value="gps"/>
-        <param name="lat_r" value="45.000000" />
-        <param name="lon_r" value="9.000000" />
-        <param name="alt_r" value="1.0" />
+        <param name="lat_r" value="45.618932386592405" />
+        <param name="lon_r" value="9.281178887031235" />
+        <param name="alt_r" value="229.04906147731415" />
     </node>
 
     <!-- Nodo per il calcolo dei tempi di settore -->
@@ -23,6 +23,6 @@
     </node>
 
     <!-- Avvia RViz con una configurazione predefinita -->
-    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find first_project)/cfg/odom_gps_view.rviz" />
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find first_project)/rviz/odom_gps_view.rviz" />
 
 </launch>
